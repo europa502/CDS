@@ -4,17 +4,18 @@ import tensorflow as tf
 
 class video_process:
 	
-	def __init__(self,intensity,sensitivity,det_dir):
+	def __init__(self,intensity,sensitivity,det_dir,verbose):
 		self.intensity= intensity
 		self.sensitivity=sensitivity
 		self.det_dir=det_dir
-		
+		self.verbose=verbose
 		try:  
 			os.mkdir(det_dir)
 		except OSError:  
-		    print ("Creation of the directory %s failed" % det_dir)
+		
+		    print "Creation of the directory %s failed" % det_dir
 		else:  
-		    print ("Successfully created the directory %s " % det_dir)
+		    print "Successfully created the directory %s" % det_dir
 
 	def details(self):
 
@@ -25,21 +26,24 @@ class video_process:
 		cap.set(2,1)		#CAP_PROP_POS_AVI_RATIO,END
 		self.length= cap.get(0)	#CV_CAP_PROP_POS_MSEC
 		cap.set(2,0)		#reset pointer to initial position
-		print "Width:		",width
-		print "Height:		",height
-		print "FPS:		",self.fps
-		print "Total Frames:	",self.frames
-		print "Length:		",self.length/1000, "sec"
+		if self.verbose>0:
+			print "Width:		",width
+			print "Height:		",height
+			print "FPS:		",self.fps
+			print "Total Frames:	",self.frames
+			print "Length:		",self.length/1000, "sec"
 
 	def process(self):
 		global cap
 		score_array={}
 		for ids in self.label_lines:
 			score_array[ids]=0.0 
-		print score_array
+		#print score_array
+		begin=time.time()
 		with tf.Session() as sess:
 			for frame_count in range(0,int(self.frames),self.intensity):
-				print "current frame",frame_count
+				if self.verbose>1:
+					print "current frame",frame_count
 				
 				cap.set(1,frame_count-1)
 				#print "Frame - ",cap.get(0)/self.fps
@@ -66,13 +70,19 @@ class video_process:
 					score_array[human_string]=score_array[human_string]+score
 					net=(('%s (score = %.5f)' % (human_string, score)))
 					if score>sensitivity:
-						cv2.imwrite(det_dir+human_string+"- "+str(score)+".jpeg",image)
+						if human_string!="man":
+							cv2.imwrite(det_dir+human_string+"- "+str(score)+".jpeg",image)
+							if self.verbose==3:
+								print "Image saved to",det_dir,"as",human_string+"- "+str(score)+".jpeg"
 					#print net
-				print "Time taken",(time.time()-start)
-			print "....................................................."
-			for ids in score_array:
-				print ids,":", score_array[ids]/(self.frames/self.intensity)*100,"%"
-			print "-----------------------------------------------------"
+				if self.verbose>2:
+					print "Time taken to scan this frame",(time.time()-start)
+			if self.verbose>1:
+				print "....................................................."
+				for ids in score_array:
+					print ids,":", score_array[ids]/(self.frames/self.intensity)*100,"%"
+				print "-----------------------------------------------------"
+				print "Total time taken:	",time.time()-begin
 			
 			
 	def loader(self):
@@ -88,14 +98,16 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	
 	parser.add_argument('--video',type=str,default='', help='Path to video file')
-	parser.add_argument('--sensitivity',type=float,default='0.4', help='Set the threshold. Values range from 0.1 to 1.')
+	parser.add_argument('--verbosity',type=int,default=1, help='Add verbosity. Range from 0-3. 0 being least verbose and 3 being the most.')
+	parser.add_argument('--sensitivity',type=float,default=0.4, help='Set the threshold. Values range from 0.1 to 1.')
 	parser.add_argument('--det_dir',type=str,default='blacklist/', help='Path to the directory where the blacklisted frames need to be stored')
 	parser.add_argument('--intensity',type=int,default=4, help="Intesity with which the video needs to be scanned, Ranges from 1-100. 1 being the most intense, scans every frame. 100 being the lease intense,scans every 100th frame")
 	
 	intensity= parser.parse_args().intensity
 	sensitivity=parser.parse_args().sensitivity
 	det_dir=parser.parse_args().det_dir
-	vp = video_process(intensity,sensitivity,det_dir)
+	verbose=parser.parse_args().verbosity
+	vp = video_process(intensity,sensitivity,det_dir,verbose)
 	path= parser.parse_args().video
 
 cap = cv2.VideoCapture(path)

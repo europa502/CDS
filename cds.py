@@ -56,12 +56,14 @@ class video_process:
 				#time.sleep(0.1)
 				#image_path = "pics.jpeg"
 				start=time.time()
-				im= cv2.resize(im,dsize=(299,299), interpolation = cv2.INTER_CUBIC)
-				np_image_data = np.asarray(im)	#Numpy array
-				np_image_data=cv2.normalize(np_image_data.astype('float'), None, -0.5, .5, cv2.NORM_MINMAX)
-				np_final = np.expand_dims(np_image_data,axis=0)
+				#im= cv2.resize(im,dsize=(299,299), interpolation = cv2.INTER_CUBIC)
+				#np_image_data = np.asarray(im)	#Numpy array
+				#np_image_data=cv2.normalize(np_image_data.astype('float'), None, -0.5, .5, cv2.NORM_MINMAX)
+				#np_final = np.expand_dims(np_image_data,axis=0)
+				image_data = tf.gfile.FastGFile("pics.jpeg", 'rb').read()
 				softmax_tensor = sess.graph.get_tensor_by_name('final_result:0')
-				predictions = sess.run(softmax_tensor,{'Mul:0': np_final})
+				predictions = sess.run(softmax_tensor, {'DecodeJpeg/contents:0': image_data})
+				#predictions = sess.run(softmax_tensor,{'Mul:0': np_final})
 	
 							   
 				# Sort to show labels of first prediction in order of confidence

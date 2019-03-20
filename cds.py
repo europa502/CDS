@@ -64,9 +64,9 @@ class video_process:
 				#np_final = np.expand_dims(np_image_data,axis=0)
 				image_data = tf.gfile.FastGFile("pics.jpeg", 'rb').read()
 				softmax_tensor = sess.graph.get_tensor_by_name('final_result:0')
-				print "softmax_tensor" , softmax_tensor[0]
+				#print "softmax_tensor" , softmax_tensor[0]
 				predictions = sess.run(softmax_tensor, {'DecodeJpeg/contents:0': image_data})
-				print "predictions" , predictions
+				#print "predictions" , predictions
 				#predictions = sess.run(softmax_tensor,{'Mul:0': np_final})
 				
 
